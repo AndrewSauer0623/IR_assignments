@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Program created by Andrew Sauer, Russel, Bailey, Max, Oliwia.
+# Program created by Andrew Sauer.
 # Contains a functions required to read NYT data and form a simple inverted index.
 import re
 import sys
