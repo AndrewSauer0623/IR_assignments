@@ -6,9 +6,11 @@ import sys
 import json
 from pathlib import Path
 from collections import defaultdict
+import xml.etree.ElementTree as ET
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+
 nltk.download('stopwords')
 nltk.download('wordnet')
 nltk.download('omw-1.4')
@@ -24,15 +26,22 @@ def parse_folder(folder):
     docs = []
     folder_path = Path(folder)
     for file in folder_path.iterdir():
-        if file.is_file():
-            content = file.read_text(encoding="utf8", errors="ignore")
-            blocks = DOC_RE.findall(content)
-            for block in blocks:
-                docno = tag_content("DOCNO", block)
-                headline = tag_content("HEADLINE", block)
-                body = tag_content("TEXT", block)
-                text = (headline + " " + body).strip()
-                docs.append((docno, text))
+        if file.is_file() and file.suffix == ".xml":
+            tree = ET.parse(file)
+            root = tree.getroot()
+            for article in root.findall(".//PubmedArticle"):
+                pmid_elem = article.find(".//PMID")
+                pmid = pmid_elem.text.strip() if pmid_elem is not None else None
+
+                title_elem = article.find(".//ArticleTitle")
+                title = title_elem.text.strip() if title_elem is not None else ""
+
+                abstract_texts = article.findall(".//Abstract/AbstractText")
+                abstract = " ".join([t.text.strip() for t in abstract_texts if t.text])
+
+                text = (title + " " + abstract).strip()
+                if pmid and text:
+                    docs.append((pmid, text))
     return docs
 
 def tokenize(text):
@@ -104,9 +113,8 @@ def query_index(term, index_file="index.json", docs=None):
             for s in found:
                 print(" ", s)
             print()
-
 def main():
-    folder = sys.argv[2]
+    folder = sys.argv[1]
     docs = parse_folder(folder)
 
     print("Parsed", len(docs), "documents")
@@ -122,6 +130,6 @@ def main():
     with open("index.json", "w", encoding="utf8") as f:
         json.dump(index, f, indent=2)
 
-    query_index("America", docs=docs)
+    query_index("cancer", docs=docs)  # example query
 
 main()
