@@ -1,5 +1,5 @@
-# Rusel
-from 23tree import TreeNode
+# Russel
+from tree23 import TreeNode
 def find_terms_by_prefix(root: 'TreeNode', prefix: str) -> tuple[list[str], int]:
     """
     Input:  tree root, prefix string (e.g., 's')
