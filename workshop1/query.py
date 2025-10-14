@@ -1,21 +1,44 @@
 #Russell
 from tree23 import TreeNode
 
-def find_terms_by_prefix(root: 'TreeNode', prefix: str) -> tuple[list[str], int]:
+def find_terms_by_prefix(root: 'TreeNode', pattern: str) -> tuple[list[str], int]:
     """
-    Input:  tree root, prefix string (e.g., 's', '*ing')
+    Input: tree root, pattern string with optional '*'
     Output: (list of matching terms, number of nodes visited)
 
-    If prefix starts with '*', match terms that END with the given string.
-    Else, match terms that START with the given string.
+    - '*' at start or end can match any number of characters
+    - '*' in the middle matches exactly one character
     """
+    matches = []
+    steps = 0
 
-    matches = []       # list of terms that match the prefix
-    steps = 0          # how many nodes we visit in total
+    def match_pattern(term: str, pattern: str) -> bool:
+        if "*" not in pattern:
+            return term == pattern
 
-    # Determine if wildcard match (endswith) or normal prefix match (startswith)
-    is_wildcard = prefix.startswith("*")
-    actual_prefix = prefix[1:] if is_wildcard else prefix
+        if pattern.startswith("*") and pattern.endswith("*"):
+            inner = pattern.strip("*")
+            return inner in term
+
+        elif pattern.startswith("*"):
+            suffix = pattern[1:]
+            return term.endswith(suffix)
+
+        elif pattern.endswith("*"):
+            prefix = pattern[:-1]
+            return term.startswith(prefix)
+
+        else:
+            # '*' in the middle – match exactly one character
+            parts = pattern.split("*")
+            if len(parts) != 2:
+                return False  # only support one '*' in middle for now
+
+            start, end = parts
+            if len(term) != len(start) + 1 + len(end):
+                return False
+
+            return term.startswith(start) and term.endswith(end)
 
     def traverse(node: 'TreeNode'):
         nonlocal steps
@@ -25,12 +48,8 @@ def find_terms_by_prefix(root: 'TreeNode', prefix: str) -> tuple[list[str], int]
         steps += 1
 
         for key in node.keys:
-            if is_wildcard:
-                if key.endswith(actual_prefix):
-                    matches.append(key)
-            else:
-                if key.startswith(actual_prefix):
-                    matches.append(key)
+            if match_pattern(key, pattern):
+                matches.append(key)
 
         for child in node.children:
             traverse(child)
