@@ -29,16 +29,18 @@ def find_terms_by_prefix(root: 'TreeNode', pattern: str) -> tuple[list[str], int
             return term.startswith(prefix)
 
         else:
-            # '*' in the middle – match exactly one character
-            parts = pattern.split("*")
-            if len(parts) != 2:
-                return False  # only support one '*' in middle for now
+    # '*' in the middle — each '*' matches exactly one character
+    if len(term) != len(pattern):
+        return False
 
-            start, end = parts
-            if len(term) != len(start) + 1 + len(end):
-                return False
+    for pc, tc in zip(pattern, term):
+        if pc == '*':
+            continue  # accept any single character
+        if pc != tc:
+            return False
 
-            return term.startswith(start) and term.endswith(end)
+    return True
+
 
     def traverse(node: 'TreeNode'):
         nonlocal steps
