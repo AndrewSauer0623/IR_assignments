@@ -29,15 +29,15 @@ def find_terms_by_prefix(root: 'TreeNode', pattern: str) -> tuple[list[str], int
             return term.startswith(prefix)
 
         else:
-    # '*' in the middle — each '*' matches exactly one character
-    if len(term) != len(pattern):
-        return False
+            # '*' in the middle — each '*' matches exactly one character
+            if len(term) != len(pattern):
+                return False
 
-    for pc, tc in zip(pattern, term):
-        if pc == '*':
-            continue  # accept any single character
-        if pc != tc:
-            return False
+            for pc, tc in zip(pattern, term):
+                if pc == '*':
+                    continue  # accept any single character
+                if pc != tc:
+                    return False
 
     return True
 
