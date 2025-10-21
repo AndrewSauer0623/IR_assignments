@@ -38,9 +38,7 @@ def find_terms_by_prefix(root: 'TreeNode', pattern: str) -> tuple[list[str], int
                     continue  # accept any single character
                 if pc != tc:
                     return False
-
-    return True
-
+            return True  # <-- return True if all matched
 
     def traverse(node: 'TreeNode'):
         nonlocal steps
