@@ -12,33 +12,24 @@ def find_terms_by_prefix(root: 'TreeNode', pattern: str) -> tuple[list[str], int
     matches = []
     steps = 0
 
-    def match_pattern(term: str, pattern: str) -> bool:
-        if "*" not in pattern:
-            return term == pattern
+    import re
 
-        if pattern.startswith("*") and pattern.endswith("*"):
-            inner = pattern.strip("*")
-            return inner in term
+def match_pattern(term: str, pattern: str) -> bool:
+    regex_pattern = re.escape(pattern).replace(r'\*', '.')
+    if pattern.startswith('*') and pattern.endswith('*') and len(pattern) > 2:
+        inner = re.escape(pattern.strip('*'))
+        regex_pattern = f".*{inner}.*"
+    elif pattern.startswith('*'):
+        suffix = re.escape(pattern[1:])
+        regex_pattern = f".*{suffix}$"
+    elif pattern.endswith('*'):
+        prefix = re.escape(pattern[:-1])
+        regex_pattern = f"^{prefix}.*"
+    else:
+        regex_pattern = f"^{regex_pattern}$"
 
-        elif pattern.startswith("*"):
-            suffix = pattern[1:]
-            return term.endswith(suffix)
+    return re.match(regex_pattern, term) is not None
 
-        elif pattern.endswith("*"):
-            prefix = pattern[:-1]
-            return term.startswith(prefix)
-
-        else:
-            # '*' in the middle — each '*' matches exactly one character
-            if len(term) != len(pattern):
-                return False
-
-            for pc, tc in zip(pattern, term):
-                if pc == '*':
-                    continue  # accept any single character
-                if pc != tc:
-                    return False
-            return True  # <-- return True if all matched
 
     def traverse(node: 'TreeNode'):
         nonlocal steps
