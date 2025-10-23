@@ -36,3 +36,10 @@ def preprocess_text(text: str) -> list[str]:
 
     return tokens
     
+def compute_term_frequencies(tokens_by_doc):
+    """
+    Input:  {doc_id: [tokens]}
+    Output: {doc_id: {term: tf}}
+    Count occurrences of each term per doc.
+    """
+    pass

@@ -176,3 +176,10 @@ def _split_internal(parent: TreeNode, child_index: int) -> TreeNode:
         return _split_leaf(parent)
 
     return parent
+
+def build_permuterm_index_from_terms(terms: list[str]) -> TreeNode:
+    """
+    Input: list of unique terms from inverted index
+    Output: 2–3 tree mapping permuted terms to base term
+    """
+    pass

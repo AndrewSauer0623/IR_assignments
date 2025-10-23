@@ -48,3 +48,30 @@ def find_terms_by_prefix(root: 'TreeNode', pattern: str) -> tuple[list[str], int
 
     traverse(root)
     return matches, steps
+
+def compute_query_weights(query_terms, inverted_index):
+    """
+    Input:  list of terms, inverted_index
+    Output: {term: query_weight}
+
+    Steps:
+      - compute tf and log(tf)
+      - compute IDF = log(N / df)
+      - multiply log(tf)*idf
+      - normalize to unit length
+    """
+    pass
+
+
+def rank_documents(query_weights, inverted_index):
+    """
+    Input:  query_weights, inverted_index
+    Output: ranked list of (doc_id, score)
+
+    Steps:
+      - for each query term, get postings
+      - multiply doc term weight × query term weight
+      - sum for each doc
+      - sort by score descending
+    """
+    pass
