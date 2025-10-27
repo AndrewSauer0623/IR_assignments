@@ -182,4 +182,14 @@ def build_permuterm_index_from_terms(terms: list[str]) -> TreeNode:
     Input: list of unique terms from inverted index
     Output: 2–3 tree mapping permuted terms to base term
     """
-    pass
+    def generate_permuterms(term: str) -> list[str]:
+        """Generate all rotations of a term with $ marker"""
+        s = term + "$"
+        return [s[i:] + s[:i] for i in range(len(s))]
+
+    root = None
+    for term in terms:
+        # generate all rotations for the permuterm index
+        for perm in generate_permuterms(term):
+            root = insert_term(root, perm, term)  # use your existing insert_term
+    return root
