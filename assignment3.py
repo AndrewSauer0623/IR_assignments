@@ -5,6 +5,7 @@ from collections import defaultdict
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+import shlex
 
 nltk.download('stopwords', quiet=True)
 nltk.download('wordnet', quiet=True)
@@ -31,8 +32,6 @@ def parse_folder(folder):
                 if docno and full_text:
                     docs.append((docno, full_text))
     return docs
-
-
 
 def tokenize(text):
     raw = re.split(r"[^A-Za-z0-9']+", text)
@@ -183,24 +182,80 @@ def prefix_search(root, prefix, matches):
     for child in root.children:
         prefix_search(child, prefix, matches)
 
+def expand_term(term, tree_root, index):
+    # If wildcard present, expand using permuterm index
+    if '*' in term:
+        perm_key = wildcard_to_permuterm_key(term)
+        results = []
+        prefix_search(tree_root, perm_key, results)
+        expanded_terms = sorted(set(results))
+        final_docs = set()
+        for t in expanded_terms:
+            if t in index:
+                final_docs.update(index[t]['postings'])
+        return final_docs
+    # Normal term
+    if term in index:
+        return set(index[term]['postings'])
+    return set()
 
-def wildcard_search(pattern, tree_root, index, docs):
-    if '*' not in pattern:
-        print("Wildcard must contain '*'")
-        return
-    perm_key = wildcard_to_permuterm_key(pattern)
-    results = []
-    prefix_search(tree_root, perm_key, results)
-    results = sorted(set(results))
-    if not results:
-        print("No matching terms.")
-        return
-    print(f"Wildcard '{pattern}' matched terms:", results)
-    for term in results:
-        if term in index:
-            print(f"Term '{term}' appears in {index[term]['df']} documents.")
-            for docid in index[term]['postings']:
-                print(" ", docid)
+def boolean_search(query, tree_root, index):
+    tokens = shlex.split(query)
+    tokens = [t.upper() if t in {"AND", "OR", "NOT", "XOR"} else t for t in tokens]
+    precedence = {"NOT": 3, "AND": 2, "AND NOT": 2, "OR": 1, "OR NOT": 1, "XOR": 1}
+    output, stack = [], []
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        if tok in precedence:
+            # handle composite ops like "AND NOT"
+            if tok in {"AND", "OR"} and i + 1 < len(tokens) and tokens[i + 1] == "NOT":
+                tok = tok + " NOT"
+                i += 1
+            while stack and precedence.get(stack[-1], 0) >= precedence[tok]:
+                output.append(stack.pop())
+            stack.append(tok)
+        elif tok == "(":
+            stack.append(tok)
+        elif tok == ")":
+            while stack and stack[-1] != "(":
+                output.append(stack.pop())
+            stack.pop()
+        else:
+            output.append(tok)
+        i += 1
+    while stack:
+        output.append(stack.pop())
+
+    # Evaluate postfix Boolean expression
+    eval_stack = []
+    all_docs = set(doc for postings in index.values() for doc in postings['postings'])
+    for tok in output:
+        if tok not in precedence:
+            eval_stack.append(expand_term(tok, tree_root, index))
+        else:
+            if tok == "NOT":
+                a = eval_stack.pop()
+                eval_stack.append(all_docs - a)
+            else:
+                b = eval_stack.pop()
+                a = eval_stack.pop()
+                if tok == "AND":
+                    eval_stack.append(a & b)
+                elif tok == "OR":
+                    eval_stack.append(a | b)
+                elif tok == "XOR":
+                    eval_stack.append(a ^ b)
+                elif tok == "AND NOT":
+                    eval_stack.append(a - b)
+                elif tok == "OR NOT":
+                    eval_stack.append(a | (all_docs - b))
+    return eval_stack[0] if eval_stack else set()
+
+def format_output(results, name):
+    for rank, docid in enumerate(sorted(results), start=1):
+        print(f"0 1 {docid} 0 1.0 {name}")
+
 
 
 folder = sys.argv[1]
@@ -217,8 +272,16 @@ for term in index:
         tree_root = insert_term(tree_root, p, [term])
 
 # Example wildcard queries
-print("\nWildcard examples:")
-for q in ["*cancer", "canc*", "can*er"]:
+print("\nBoolean query examples:")
+queries = [
+    "cancer AND treatment",
+]
+
+for q in queries:
     print("\nQuery:", q)
-    wildcard_search(q, tree_root, index, docs)
+    results = boolean_search(q, tree_root, index)
+    if not results:
+        print("No matching documents.")
+    else:
+        format_output(results, "SauerAndrew")
 
