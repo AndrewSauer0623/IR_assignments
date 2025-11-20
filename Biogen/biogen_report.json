@@ -1,0 +1,75 @@
+{
+  "question_id": "Q1",
+  "answers": [
+    {
+      "doc_id": "54",
+      "text": "The action of snake venom phospholipases A2 in human erythrocytes involves two sequential events: (a) hydrolysis of 70% of the total cell phosphatidylcholine without any evident hemolysis; and (b) complete hydrolysis of the remaining phosphatidylcholine, followed by extensive phosphatidylethanolamine hydrolysis and finally with onset of hemolysis, attack on the phosphatidylserine. At pH 7.4 and 10 mM Ca2+ only stage (a) occurred. However, a slight elevation of the pH of incubation to pH 8.0 and/or inclusion of 40 mM Ca2+ in the reaction mixture caused both events (a) and (b) to occur. The addition of glucose limited the action of the enzyme to stage (a) under any reaction conditions. Enzymically induced hemolysis occurred under conditions where the intracellular ATP levels were lowered. Stage (b) is suggested to be mediated by an influx of Ca2+ into the cell when the levels of ATP are low. The phospholipase from Naja naja venom yielded similar results to those observed with the basic enzyme from Agkistrodon venom. However, the enzyme from Crotalus adamanteus and the acidic enzyme also present in the Agkistrodon venom produced only slight hydrolysis or hemolysis. Other species of erythrocytes, e.g., guinea pig, monkey, pig, and rat, were tested but only those from guinea pig behaved similarly to the human cells. Pig, monkey, and rat erythrocytes underwent very limited hydrolysis and hemolysis. Therefore, the use of these phospholipases to probe the localization of phospholipids in erythrocyte membranes must be approached with caution.",
+      "title": "Phospholipase A2 as a probe of phospholipid distribution in erythrocyte membranes. Factors influencing the apparent specificity of the reaction.",
+      "authors": [
+        "J K Martin",
+        "M G Luthra",
+        "M A Wells",
+        "R P Watts",
+        "D J Hanahan"
+      ],
+      "journal": {
+        "title": "Biochemistry",
+        "isoabbreviation": "Biochemistry",
+        "issn": "0006-2960",
+        "volume": "14",
+        "issue": "25",
+        "pages": "5400-8"
+      },
+      "pub_date": {
+        "Year": "1975",
+        "Month": "Dec",
+        "Day": "16"
+      }
+    },
+    {
+      "doc_id": "31",
+      "text": "The document mentions five distinct ester hydrolases in the epidermis of guinea-pigs. These are carboxylic esterase, acid phosphatase, pyrophosphatase, and arylsulphatase A and B. Their properties are consistent with those of lysosomal enzymes.",
+      "title": "Lysosomal hydrolases of the epidermis. 2. Ester hydrolases.",
+      "authors": [
+        "P D Mier",
+        "J J van den Hurk"
+      ],
+      "journal": {
+        "title": "The British journal of dermatology",
+        "isoabbreviation": "Br J Dermatol",
+        "issn": "0007-0963",
+        "volume": "93",
+        "issue": "4",
+        "pages": "391-8"
+      },
+      "pub_date": {
+        "Year": "1975",
+        "Month": "Oct"
+      }
+    },
+    {
+      "doc_id": "50",
+      "text": "The circular dichroism (CD) and fluorescence studies of homogeneous antibodies to type III pneumococcal polysaccharide were conducted. The CD spectra of the native antibodies in the 260-310-nm range were found to be very similar in shape and sign, with a positive band at 285 nm. The reconstituted antibody molecules also exhibited similar CD spectra to the native antibodies. Upon addition of the hexasaccharide ligand, a significant decrease in amplitude of the CD spectra (18-21%) occurred in all three native antibodies, their Fab fragments, and the homologous recombinant molecules. No CD spectral changes were detected upon interaction of the hapten ligand with the heterologous recombinants. All homogeneous antibodies studied exhibited fluorescence quenching upon oligosaccharide binding and a blue shift of the emission maximum. This allowed the determination of the binding constant of one selected antibody. The CD and fluorescence spectroscopic data suggest that oligosaccharide ligands induced detectable conformational changes in the Fab fragment of the antibody.",
+      "title": "Circular dichroism and fluorescence studies of homogeneous antibodies to type III pneumococcal polysaccharide.",
+      "authors": [
+        "J C Jaton",
+        "H Huser",
+        "Y Blatt",
+        "I Pecht"
+      ],
+      "journal": {
+        "title": "Biochemistry",
+        "isoabbreviation": "Biochemistry",
+        "issn": "0006-2960",
+        "volume": "14",
+        "issue": "24",
+        "pages": "5308-11"
+      },
+      "pub_date": {
+        "Year": "1975",
+        "Month": "Dec",
+        "Day": "02"
+      }
+    }
+  ]
+}
