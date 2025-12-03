@@ -14,12 +14,11 @@ def run_pipeline(
         faiss_index_file: str = "faiss_index.index",
         top_n_faiss: int = 10,
         top_k_bm25: int = 3,
-        max_docs: int = 40,
         question_id: str = "Q1",
         report_file: str = "biogen_report.json") -> None:
 
     print("Loading JSONL documents...")
-    docs = load_jsonl(jsonl_dir)[:max_docs]  # restrict to first max_docs docs
+    docs = load_jsonl(jsonl_dir)
     doc_lookup = {doc.id: doc for doc in docs}  # build lookup for metadata
     print("Loaded", len(docs), "documents")
 
@@ -27,14 +26,9 @@ def run_pipeline(
     if os.path.exists(faiss_index_file):
         print("Loading existing FAISS index...")
         full_index = load_faiss_index(faiss_index_file)
+        faiss_index = full_index
+        print("Faiss index loaded")
 
-        # create a mini index with just the first max_docs vectors
-        dim = full_index.d
-        faiss_index = faiss.IndexFlatIP(dim)
-        vectors = np.vstack([full_index.reconstruct(i) for i in range(max_docs)])
-        faiss_index.add(vectors)
-
-        print(f"Mini FAISS index with first {max_docs} vectors loaded")
     else:
         print("Building FAISS index on full corpus...")
         faiss_index, _ = build_faiss_index(docs)
