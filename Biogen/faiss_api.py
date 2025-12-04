@@ -1,116 +1,133 @@
 import os
 import json
 import random
-import numpy as np
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, Query
 from pydantic import BaseModel
-from sentence_transformers import SentenceTransformer
+import numpy as np
 import faiss
+from sentence_transformers import SentenceTransformer
 from rank_bm25 import BM25Okapi
-from dotenv import load_dotenv
 
 app = FastAPI()
 load_dotenv()
 
 # API key from environment
-API_KEY = os.getenv("API_KEY")
+approved_key = os.getenv("API_KEY")
 
 # Paths
 INDEX_PATH = "/index/faiss_index.index"
-DATA_DIR = "/index/pubmed_jsonl/"
+DATA_DIR = "/index/pubmed_jsonl"
 
 # Load FAISS index
 index = faiss.read_index(INDEX_PATH)
+dim = index.d
+print(f"FAISS index loaded with {index.ntotal} vectors of dimension {dim}")
 
-# Load all JSONL docs into RAM
-docs = []
-for fname in sorted(os.listdir(DATA_DIR)):
-    if fname.endswith(".jsonl"):
-        with open(os.path.join(DATA_DIR, fname), "r", encoding="utf-8") as f:
-            for line in f:
-                try:
-                    docs.append(json.loads(line))
-                except json.JSONDecodeError:
-                    continue
+# Load all JSONL docs into memory
+json_docs = []
+for file_name in sorted(os.listdir(DATA_DIR)):
+    if not file_name.endswith(".jsonl"):
+        continue
+    with open(os.path.join(DATA_DIR, file_name), "r", encoding="utf-8") as f:
+        for line in f:
+            try:
+                doc = json.loads(line)
+                json_docs.append(doc)
+            except json.JSONDecodeError:
+                continue
+print(f"Loaded {len(json_docs)} documents into memory")
 
-# Sentence Transformer for FAISS queries
-model = SentenceTransformer("all-MiniLM-L6-v2")
+# Load sentence transformer model
+model = SentenceTransformer('all-MiniLM-L6-v2')
 
-# Pydantic request model
+
+# Pydantic model
 class QueryRequest(BaseModel):
     text: str
-    k_candidates: int = 10  # number of FAISS candidates to fetch
-    docid: str = ""          # doc to skip if present
+    k: int = 5
+    docid: str = None
 
-# Middleware for API key check
+
+# Middleware for API key
 @app.middleware("http")
-async def verify_api_key(request: Request, call_next):
-    key = request.headers.get("x-api-key")
-    if key != API_KEY:
+async def verify_keys(request: Request, call_next):
+    api_key = request.headers.get("x-api-key")
+    if api_key != approved_key:
         raise HTTPException(status_code=403, detail="Forbidden: Invalid API key")
     return await call_next(request)
 
-# POST /query endpoint
-@app.post("/query")
-def query_docs(req: QueryRequest):
-    # Encode query for FAISS
-    query_vec = model.encode([req.text], convert_to_numpy=True, normalize_embeddings=True).astype("float32")
-    
-    # FAISS search for requested number of candidates
-    scores, indices = index.search(query_vec, req.k_candidates)
 
-    # Collect FAISS candidate docs
+# Query endpoint
+@app.post("/query")
+def query_index(query: QueryRequest):
+    # Embed query
+    query_embedding = model.encode(
+        query.text,
+        convert_to_numpy=True,
+        normalize_embeddings=True
+    ).astype('float32')
+    query_embedding = np.expand_dims(query_embedding, axis=0)
+
+    # FAISS search
+    k = query.k
+    scores, indices = index.search(query_embedding, k + 2)  # overfetch in case of skipped docs
+
+    # Collect candidates
     candidates = []
-    candidate_texts = []
-    for idx in indices[0]:
+    for score, idx in zip(scores[0], indices[0]):
+        if len(candidates) >= k + 2:
+            break
         try:
-            doc = docs[idx]
-            if req.docid and doc.get("docid") == req.docid:
+            result = json_docs[idx]
+            if query.docid and result.get("id") == query.docid:
                 continue
-            candidates.append(doc)
-            candidate_texts.append((doc.get("title","") + " " + doc.get("body","")).split())
-        except IndexError:
+            candidates.append({
+                "score": float(score),
+                "docid": result.get("id", ""),
+                "title": result.get("MedlineCitation.Article.ArticleTitle.ArticleTitle", ""),
+                "body": result.get("text", ""),
+                "url": result.get("PubmedData.ArticleIdList.ArticleId.ArticleId", "")
+            })
+        except (IndexError, KeyError, json.JSONDecodeError):
             continue
 
-    if not candidates:
-        return {}
+    # BM25 rerank
+    if candidates:
+        candidate_texts = [c["body"] for c in candidates if c["body"]]
+        tokenized_candidates = [text.split() for text in candidate_texts if text]
+        if tokenized_candidates:
+            bm25 = BM25Okapi(tokenized_candidates)
+            query_tokens = query.text.split()
+            bm25_scores = bm25.get_scores(query_tokens)
+            for c, s in zip(candidates, bm25_scores):
+                c["score"] = round(float(s), 4)
 
-    # BM25 rerank over FAISS candidates
-    bm25_index = BM25Okapi(candidate_texts)
-    bm25_scores = bm25_index.get_scores(req.text.split())
-
-    # Return top 3 reranked results
-    top_indices = bm25_scores.argsort()[-3:][::-1]
-
-    results = {}
-    for rank, i in enumerate(top_indices):
-        doc = candidates[i]
-        results[rank+1] = {
-            "score": round(float(bm25_scores[i]), 4),
-            "docid": doc.get("docid"),
-            "title": doc.get("title"),
-            "url": doc.get("url"),
-            "body": doc.get("body")
-        }
+    # Return top 3 after rerank
+    results = {i + 1: c for i, c in enumerate(sorted(candidates, key=lambda x: -x["score"])[:3])}
     return results
 
-# GET /random endpoint
+
+# Random articles endpoint
 @app.get("/random")
-def random_docs(k: int = Query(default=5, ge=1, le=2000)):
+def get_random_articles(k: int = Query(default=5, ge=1, le=2000)):
     results = {}
-    seen = set()
+    seen_indices = set()
     count = 0
     while count < k:
-        idx = random.randint(0, len(docs) - 1)
-        if idx in seen:
+        idx = random.randint(0, len(json_docs) - 1)
+        if idx in seen_indices:
             continue
-        seen.add(idx)
-        doc = docs[idx]
-        results[count+1] = {
-            "docid": doc.get("docid"),
-            "title": doc.get("title"),
-            "url": doc.get("url"),
-            "body": doc.get("body")
-        }
-        count += 1
+        seen_indices.add(idx)
+        try:
+            doc = json_docs[idx]
+            results[count + 1] = {
+                "docid": doc.get("id", ""),
+                "title": doc.get("MedlineCitation.Article.ArticleTitle.ArticleTitle", ""),
+                "body": doc.get("text", ""),
+                "url": doc.get("PubmedData.ArticleIdList.ArticleId.ArticleId", "")
+            }
+            count += 1
+        except (KeyError, json.JSONDecodeError):
+            continue
     return results
